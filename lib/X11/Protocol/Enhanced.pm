@@ -1,10 +1,10 @@
 package X11::Protocol::Enhanced;
-use X11::Protocol;
+use X11::Protocol qw(pad padding padded make_num_hash);
 use Carp;
 use strict;
 no warnings;
 use vars '$VERSION';
-$VERSION = 0.01;
+$VERSION = 0.02;
 
 =head1 NAME
 
