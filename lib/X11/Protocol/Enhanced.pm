@@ -4,7 +4,7 @@ use Carp;
 use strict;
 no warnings;
 use vars '$VERSION';
-$VERSION = 0.02;
+$VERSION = 0.05;
 
 =head1 NAME
 
@@ -44,12 +44,13 @@ C<X11::Protocol(3pm)> object:
 
 =over
 
-=item $mask = $X->B<pack_mask>(I<$typename>,@constants)
+=item $mask = $X->B<pack_mask>(I<$typename>,\@constants)
 
 Where, I<$typename> is a symbolic constant type name like C<Bool> or
-C<XkbControl>, and C<@constants> is a list of symbolic constants
-defined for I<$typename> or bit numbers.  B<pack_mask> returns a numeric
-value representing the mask with the appropriate bits set.
+C<XkbControl>, and C<\@constants> is a list (array ref) of symbolic
+constants defined for I<$typename> or bit numbers.  B<pack_mask> returns
+a numeric value representing the mask with the appropriate bits set.
+When C<\@constants> is a scalar value, the value is simply returned.
 
 This function is similar to B<pack_event_mask> with the exception that
 it can be used where I<$typename> is not equal to 'EventMask'.
@@ -62,7 +63,8 @@ hash of bit values.
 =cut
 sub pack_mask {
     my $self = shift;
-    my($typename,@x) = @_;
+    my($typename,$x) = @_;
+    return $x unless ref($x) eq 'ARRAY';
     my $type = $self->{const_num}{$typename};
     $type = $self->{ext_const_num}{$typename} unless $type;
     if (not $type) {
@@ -77,7 +79,7 @@ sub pack_mask {
     }
     my($i, $mask);
     $mask = 0;
-    for $i (@x) {
+    for $i (@$x) {
         $i = $type->{$i} if $type and exists $type->{$i};
         if ($i =~ m{^\d+$} and $i<32) {
             $mask |= 1<<$i;
@@ -180,7 +182,11 @@ sub pack_enum($$) {
             {make_num_hash($self->{ext_const}{$typename})};
         }
     }
-    $x = $type->{$x} if $type and exists $type->{$x};
+    return $self->{const_num}{$typename}{$x}
+	if exists $self->{const_num}{$typename}{$x};
+    return $self->{ext_const_num}{$typename}{$x}
+	if exists $self->{ext_const_num}{$typename}{$x};
+    return $x;
 }
 
 *X11::Protocol::pack_enum =
@@ -207,9 +213,15 @@ sub unpack_enum {
     my $self = shift;
     my ($typename,$num) = @_;
     if ($self->{do_interp}) {
-        my $type = $self->{const}{$typename};
-        $type = $self->{ext_const}{$typename} unless $type;
-        $num = $type->[$num] if $type and $type->[$num];
+        return $num if $num < 0;
+	if ($self->{const}{$typename} and
+		defined($self->{const}{$typename}[$num])) {
+	    $num = $self->{const}{$typename}[$num];
+	}
+	elsif ($self->{ext_const}{$typename} and
+		defined($self->{ext_const}{$typename}[$num])) {
+	    $num = $self->{ext_const}{$typename}[$num];
+	}
     }
     return $num;
 }

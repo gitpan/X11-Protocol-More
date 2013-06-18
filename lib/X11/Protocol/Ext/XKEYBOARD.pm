@@ -12,7 +12,7 @@ use Carp;
 use strict;
 use warnings;
 use vars '$VERSION';
-$VERSION = 0.01;
+$VERSION = 0.02;
 
 =head1 NAME
 
@@ -1100,7 +1100,7 @@ B<X11::Protocol::Ext::KEYBOARD> provides the folloing requests:
                         $pack .= $p[0];
                         $vlen += $p[1];
                         push @topack, $x->pack_mask($p[2],
-                                @{$ad{$XkbEventType->[$i]}});
+                                $ad{$XkbEventType->[$i]});
                     }
                 }
             }
